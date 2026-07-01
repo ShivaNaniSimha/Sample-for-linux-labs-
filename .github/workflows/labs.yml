@@ -37,6 +37,7 @@ jobs:
   build:
     needs: detect
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         lab: ${{ fromJson(needs.detect.outputs.labs) }}
@@ -48,14 +49,21 @@ jobs:
       - name: Build lab image
         run: |
           if [ ! -d "${{ matrix.lab }}" ]; then
-            echo "Skipping: not a directory"
+            echo "Skipping (not a directory): ${{ matrix.lab }}"
             exit 0
           fi
 
           if [ ! -f "${{ matrix.lab }}/docker-compose.yml" ]; then
-            echo "Skipping: no docker-compose.yml"
+            echo "Skipping (no docker-compose.yml): ${{ matrix.lab }}"
             exit 0
           fi
 
           echo "Building: ${{ matrix.lab }}"
-          docker build -t ${{ matrix.lab }}:v${{ github.run_number }} ./${{ matrix.lab }}
+
+          docker build \
+            -t ${{ matrix.lab }}:${{ github.sha }} \
+            ./${{ matrix.lab }}
+
+          docker tag \
+            ${{ matrix.lab }}:${{ github.sha }} \
+            ${{ matrix.lab }}:latest
