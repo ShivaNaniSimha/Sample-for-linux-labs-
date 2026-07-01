@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Multi-Lab Conditional Build
 
 on:
   push:
@@ -6,56 +6,56 @@ on:
       - main
 
 jobs:
-  deploy:
+  detect:
     runs-on: ubuntu-latest
+    outputs:
+      labs: ${{ steps.set.outputs.labs }}
 
     steps:
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
+          fetch-depth: 2
 
-            set -e
+      - name: Detect changed labs
+        id: set
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD || true)
 
-            VERSION=v${{ github.run_number }}
+          if [ -z "$CHANGED" ]; then
+            echo "labs=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-            cd ~/Sample-for-linux-labs-
+          LABS=$(echo "$CHANGED" \
+            | cut -d/ -f1 \
+            | sort -u \
+            | jq -R -s -c 'split("\n")[:-1]')
 
-            echo "Pulling latest code..."
-            git fetch origin
-            git reset --hard origin/main
+          echo "labs=$LABS" >> $GITHUB_OUTPUT
 
-            echo "Building Docker image with version: $VERSION"
-            docker build -t simple-cicd-app:$VERSION .
+  build:
+    needs: detect
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lab: ${{ fromJson(needs.detect.outputs.labs) }}
 
-            echo "Tagging latest..."
-            docker tag simple-cicd-app:$VERSION simple-cicd-app:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            echo "Stopping old container..."
-            docker stop simple-app || true
-            docker rm simple-app || true
+      - name: Build lab image
+        run: |
+          if [ ! -d "${{ matrix.lab }}" ]; then
+            echo "Skipping: not a directory"
+            exit 0
+          fi
 
-            echo "Starting new container..."
-            if docker run -d \
-                --name simple-app \
-                -p 3000:3000 \
-                --restart unless-stopped \
-                simple-cicd-app:$VERSION
-            then
-                echo "Deployment Successful - $VERSION"
+          if [ ! -f "${{ matrix.lab }}/docker-compose.yml" ]; then
+            echo "Skipping: no docker-compose.yml"
+            exit 0
+          fi
 
-            else
-                echo "Deployment Failed - rolling back"
-
-                docker rm -f simple-app || true
-
-                docker run -d \
-                    --name simple-app \
-                    -p 3000:3000 \
-                    simple-cicd-app:latest || true
-
-                exit 1
-            fi
+          echo "Building: ${{ matrix.lab }}"
+          docker build -t ${{ matrix.lab }}:v${{ github.run_number }} ./${{ matrix.lab }}
