@@ -20,42 +20,42 @@ jobs:
 
             set -e
 
+            VERSION=v${{ github.run_number }}
+
             cd ~/Sample-for-linux-labs-
 
             echo "Pulling latest code..."
             git fetch origin
             git reset --hard origin/main
 
-            echo "Building Docker image..."
-            docker build -t simple-cicd-app:new .
+            echo "Building Docker image with version: $VERSION"
+            docker build -t simple-cicd-app:$VERSION .
+
+            echo "Tagging latest..."
+            docker tag simple-cicd-app:$VERSION simple-cicd-app:latest
 
             echo "Stopping old container..."
             docker stop simple-app || true
-
-            echo "Renaming old container..."
-            docker rename simple-app simple-app-backup || true
+            docker rm simple-app || true
 
             echo "Starting new container..."
             if docker run -d \
                 --name simple-app \
                 -p 3000:3000 \
                 --restart unless-stopped \
-                simple-cicd-app:new
+                simple-cicd-app:$VERSION
             then
-                echo "Deployment Successful"
-
-                docker rm -f simple-app-backup || true
-
-                docker tag simple-cicd-app:new simple-cicd-app:latest
+                echo "Deployment Successful - $VERSION"
 
             else
-                echo "Deployment Failed"
+                echo "Deployment Failed - rolling back"
 
                 docker rm -f simple-app || true
 
-                docker rename simple-app-backup simple-app || true
-
-                docker start simple-app
+                docker run -d \
+                    --name simple-app \
+                    -p 3000:3000 \
+                    simple-cicd-app:latest || true
 
                 exit 1
             fi
