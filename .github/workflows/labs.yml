@@ -1,4 +1,4 @@
-name: Multi-Lab Build on EC2 (No Deploy)
+name: Multi-Lab Build on EC2 (Versioned Build)
 
 on:
   push:
@@ -44,14 +44,26 @@ jobs:
             echo "Changed labs:"
             echo "$LABS"
 
+            # Git commit SHA for versioning
+            VERSION=$(git rev-parse --short HEAD)
+
+            echo "Version tag: $VERSION"
+
             for LAB in $LABS
             do
               if [ -f "$LAB/Dockerfile" ]; then
+
                 echo "Building image for $LAB"
 
+                # Build versioned image
                 docker build \
-                  -t $LAB:latest \
+                  -t $LAB:$VERSION \
                   ./$LAB
+
+                # Tag as latest
+                docker tag \
+                  $LAB:$VERSION \
+                  $LAB:latest
 
               else
                 echo "Skipping $LAB (no Dockerfile)"
