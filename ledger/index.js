@@ -7,7 +7,7 @@ app.get("/", (req, res) => {
     res.send(`
         <html>
         <head>
-            <title>CI/CD UPDATED version available</title>
+            <title>CI/CD UPDATED Nothing changed</title>
             <style>
                 body{
                     font-family: Arial;
