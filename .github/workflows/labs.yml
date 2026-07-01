@@ -34,6 +34,7 @@ jobs:
 
           echo "labs=$LABS" >> $GITHUB_OUTPUT
 
+
   build:
     needs: detect
     runs-on: ubuntu-latest
@@ -46,15 +47,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build lab image
+      - name: Build Docker Image
         run: |
           if [ ! -d "${{ matrix.lab }}" ]; then
-            echo "Skipping (not a directory): ${{ matrix.lab }}"
+            echo "Skipping: not a directory ${{ matrix.lab }}"
             exit 0
           fi
 
-          if [ ! -f "${{ matrix.lab }}/docker-compose.yml" ]; then
-            echo "Skipping (no docker-compose.yml): ${{ matrix.lab }}"
+          if [ ! -f "${{ matrix.lab }}/Dockerfile" ]; then
+            echo "Skipping: no Dockerfile in ${{ matrix.lab }}"
             exit 0
           fi
 
