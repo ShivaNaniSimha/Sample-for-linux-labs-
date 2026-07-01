@@ -7,7 +7,7 @@ app.get("/", (req, res) => {
     res.send(`
         <html>
         <head>
-            <title>CI/CD Test</title>
+            <title>CI/CD Test UPDATED VERSION</title>
             <style>
                 body{
                     font-family: Arial;
@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
         <body>
             <h1>🚀 CI/CD Automation Test</h1>
             <p>Application Version : <b>Version 1.0</b></p>
-            <p>If you can see this page, deployment was successful.</p>
+            <p>If you can see this page, deployment was successful. Do you really feel it?</p>
         </body>
         </html>
     `);
