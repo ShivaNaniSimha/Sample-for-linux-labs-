@@ -20,7 +20,7 @@ jobs:
 
             set -e
 
-            cd ~/Sample-for-linux-labs
+            cd ~/Sample-for-linux-labs-
 
             echo "Pulling latest code..."
             git fetch origin
