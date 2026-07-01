@@ -22,8 +22,6 @@ jobs:
 
             echo "Connecting to EC2..."
 
-            cd ~/Sample-for-linux-labs-
-
             echo "Pulling latest code..."
             git pull origin main
 
@@ -58,3 +56,4 @@ jobs:
             done
 
             echo "Build process completed"
+            
